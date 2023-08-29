@@ -1,6 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
+using System;
 using UnityEngine;
 
 public class Ball : MonoBehaviour
@@ -11,11 +9,14 @@ public class Ball : MonoBehaviour
     private Vector3[] _positions;
     private int _movePositionIndex = 0;
     private bool _drawingStarted = false, _startMovement = false, _isMoved = true;
+    private bool _isTouched;
 
+    public event Action PreparedToMove;
+    public bool Prepared { get; private set; }
 
     private void Update()
     {
-        if (Input.touchCount > 0)
+        if (Input.touchCount > 0 && !_startMovement && _isMoved)
         {
             Touch touch = Input.GetTouch(0);
             Vector3 touchPosition = Camera.main.ScreenToWorldPoint(touch.position);
@@ -25,25 +26,33 @@ public class Ball : MonoBehaviour
             {
                 if (CheckTouchPosition(touchPosition))
                 {
+                    _isTouched = true;
                     _drawController.StartDrawing(touchPosition);
                 }
             }
             else if (touch.phase == TouchPhase.Moved)
             {
-                _drawController.Draw(touchPosition);
+                if (_isTouched)
+                    _drawController.Draw(touchPosition);
             }
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            else if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && _isTouched)
             {
                 _drawController.StopDrawing();
                 _positions = new Vector3[_drawController.Line.positionCount];
                 _drawController.Line.GetPositions(_positions);
-                _startMovement = true;
+                _isTouched = false;
                 _movePositionIndex = 0;
+                _isMoved = false;
+                Prepared = true;
+                PreparedToMove?.Invoke();
             }
         }
 
-        if (_startMovement && _isMoved)
+        if (_startMovement)
         {
+            if (_movePositionIndex < 0 || _movePositionIndex >= _positions?.Length)
+                return;
+
             Vector2 currentPos = _positions[_movePositionIndex];
             transform.position = Vector2.MoveTowards(transform.position, currentPos, _speed * Time.deltaTime);
 
@@ -57,9 +66,14 @@ public class Ball : MonoBehaviour
             if (_movePositionIndex > _positions.Length - 1)
             {
                 _startMovement = false;
-                _isMoved = false;
+                enabled = false;
             }
         }
+    }
+
+    public void Move()
+    {
+        _startMovement = true;
     }
 
     private bool CheckTouchPosition(Vector3 touchPosition)

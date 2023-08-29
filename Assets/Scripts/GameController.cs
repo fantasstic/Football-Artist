@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class GameController : MonoBehaviour
 {
-    
+    [SerializeField] private BallController _ballController;
+
+    private void Awake()
+    {
+        _ballController.Init();
+    }
 }
 
