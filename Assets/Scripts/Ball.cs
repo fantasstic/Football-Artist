@@ -5,14 +5,26 @@ public class Ball : MonoBehaviour
 {
     [SerializeField] private DrawLine _drawController;
     [SerializeField] private float _speed;
+    [SerializeField] private string _gateTag;
 
+    private Animator _animator;
+    private BallController _ballController;
     private Vector3[] _positions;
     private int _movePositionIndex = 0;
     private bool _drawingStarted = false, _startMovement = false, _isMoved = true;
     private bool _isTouched;
+    private bool _isFinishOnGate;
+
+    public bool IsOnGate => _isFinishOnGate;
 
     public event Action PreparedToMove;
     public bool Prepared { get; private set; }
+
+    private void Start()
+    {
+        _animator = GetComponent<Animator>();
+       _ballController = FindObjectOfType<BallController>();   
+    }
 
     private void Update()
     {
@@ -53,6 +65,7 @@ public class Ball : MonoBehaviour
             if (_movePositionIndex < 0 || _movePositionIndex >= _positions?.Length)
                 return;
 
+            _animator.SetBool("IsMove", true);
             Vector2 currentPos = _positions[_movePositionIndex];
             transform.position = Vector2.MoveTowards(transform.position, currentPos, _speed * Time.deltaTime);
 
@@ -67,6 +80,17 @@ public class Ball : MonoBehaviour
             {
                 _startMovement = false;
                 enabled = false;
+            }
+
+            if(_movePositionIndex > _positions.Length - 1 && _isFinishOnGate)
+            {
+                _ballController.AddFinishBall();
+                _animator.SetBool("IsMove", false);
+            }
+            else if(_movePositionIndex > _positions.Length - 1 && !_isFinishOnGate)
+            {
+                _ballController.CheckWin();
+                _animator.SetBool("IsMove", false);
             }
         }
     }
@@ -86,15 +110,26 @@ public class Ball : MonoBehaviour
     {
         if (collision.transform.tag == "Star")
         {
+            GameController gameController = FindObjectOfType<GameController>();
+            gameController.AddScore(100);
             Destroy(collision.gameObject);
+        }
+
+        if(collision.transform.tag == "Log" || collision.transform.tag == "Ball")
+        {
+            _ballController.CheckWin();
         }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.transform.tag == "Gate")
+        if (collision.transform.tag == _gateTag)
         {
-            Debug.Log("Win");
+            _isFinishOnGate = true;
+        }
+        else
+        {
+            _ballController.CheckWin();
         }
     }
 }

@@ -8,6 +8,8 @@ TagManager:
   - Star
   - Gate
   - RedBall
+  - Wood
+  - RedGate
   layers:
   - Default
   - TransparentFX

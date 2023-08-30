@@ -3,7 +3,10 @@ using UnityEngine;
 
 public class BallController : MonoBehaviour
 {
+    [SerializeField] private GameController _gameController;
+
     private Ball[] _balls;
+    private int _finishBalls;
 
     public void Init()
     {
@@ -21,6 +24,24 @@ public class BallController : MonoBehaviour
         {
             ball.PreparedToMove -= Ball_PreparedToMove;
         }
+    }
+
+    public void AddFinishBall()
+    {
+        _finishBalls++;
+
+        if (_finishBalls == _balls.Length)
+            CheckWin();
+    }    
+
+    public void CheckWin()
+    {
+        if (_finishBalls == _balls.Length)
+        {
+            _gameController.CheckWin(true);
+        }
+        else
+            _gameController.CheckWin(false);
     }
 
     private void Ball_PreparedToMove()
